@@ -34,8 +34,8 @@ Trilium Notes:
 | A URL in a code block or in inline code, when no tag comes between the URL and `</code>` | no |
 | An image source: `<img src="https://github.com/a.png">` | no |
 | An `http://` URL | no |
-| A subdomain of an ignored domain: `https://karakeep.example.com/x`, `https://a.b.example.com/y` | no |
-| An ignored domain with no subdomain: `https://example.com/x` | yes |
+| An ignored domain or one of its subdomains: `https://example.com/x`, `https://karakeep.example.com/x`, `https://a.b.example.com/y` | no |
+| A host that only starts with an ignored domain: `https://example.community/x`, `https://example.com.other.org/y` | yes |
 
 A URL ends at a space, `<`, `>`, `"` or `)`. A full stop or a comma directly after a URL becomes part of the URL. For example, `see https://github.com/a.` sends `https://github.com/a.` to Karakeep.
 
@@ -52,14 +52,14 @@ Set these constants at the top of `url-archiver.js`:
 
 | Constant | Value | Example |
 |---|---|---|
-| `ignoredDomains` | The domains whose subdomains the script does not archive. Put the domains of your own services here. | `["example.com", "example.net"]` |
+| `ignoredDomains` | The domains that the script does not archive. The script also skips all their subdomains. Put the domains of your own services here. | `["example.com", "example.net"]` |
 | `karakeepUrl` | The base URL of Karakeep, with no `/` at the end. | `"https://karakeep.example.com"` |
 | `karakeepApiToken` | The Karakeep API key. | `"<karakeep-api-token>"` |
 | `karakeepListId` | The ID of the Karakeep list that gets each bookmark. | `"<karakeep-list-id>"` |
 | `triliumUrl` | The base URL of Trilium, with no `/` at the end. The script uses it to make the note links in each bookmark. | `"https://trilium.example.com"` |
 
 > [!WARNING]
-> Make sure that `karakeepUrl` is a subdomain of a domain in `ignoredDomains`. The script changes the note, so Trilium runs the script again. If Karakeep is not ignored, the second run archives the preview links too.
+> Make sure that the host of `karakeepUrl` is in `ignoredDomains`, or is a subdomain of a domain in `ignoredDomains`. The script writes preview links into your text note. This is a content change, so Trilium can run the script on that note again. If Karakeep is not ignored, the script archives the preview links as new bookmarks. The same thing occurs when you paste a preview link into a note.
 
 > [!WARNING]
 > The API key is in plain text in the script note. Each user who can read the note can read the key.
@@ -149,7 +149,7 @@ Put the URL in a code block or in inline code. This is a quick way to keep one U
 
 ### Skip your own services
 
-Add the domains of your own services to `ignoredDomains`. The script then does not archive URLs on subdomains of those domains, for example `https://trilium.example.com`. It still archives a URL on the bare domain, for example `https://example.com`.
+Add the domains of your own services to `ignoredDomains`. The script then does not archive URLs on those domains or on their subdomains. For example, with `example.com` in the list, the script skips `https://example.com` and `https://trilium.example.com`.
 
 ## Errors
 
