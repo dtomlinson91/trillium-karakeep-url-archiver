@@ -59,10 +59,8 @@ function decodeHtmlUrl(url) {
   return url.replace(/&amp;/g, "&");
 }
 
-function replaceUrlInNote(originalUrl, newUrl) {
+function replaceUrlsInNote(replacements) {
   const noteContent = api.originEntity.getContent();
-  const replacements = {};
-  replacements[originalUrl] = newUrl;
 
   const replaceRegex = createDynamicRegex(ignoredDomains);
   const updatedContent = noteContent.replace(
@@ -80,7 +78,9 @@ function replaceUrlInNote(originalUrl, newUrl) {
   );
 
   api.originEntity.setContent(updatedContent);
-  api.log(`Replaced ${originalUrl} with ${newUrl} in note`);
+  for (const [originalUrl, newUrl] of Object.entries(replacements)) {
+    api.log(`Replaced ${originalUrl} with ${newUrl} in note`);
+  }
 }
 
 function createBookmark(url, token) {
@@ -140,12 +140,6 @@ function createBookmark(url, token) {
       const newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
       addToKarakeepList(bookmarkId, token);
       return { originalUrl: url, newUrl: newUrl };
-    })
-    .then((result) => {
-      if (!result) return null;
-
-      replaceUrlInNote(result.originalUrl, result.newUrl);
-      return result;
     })
     .catch((error) => {
       api.log("Error making API request: ", error);
@@ -253,14 +247,22 @@ function addToKarakeepList(bookmarkId, token) {
     });
 }
 
-// api.log(api.originEntity.getContent());
-
 // Check if the note has the url-archiver=ignore attribute
 if (
   api.originEntity.type !== "code" &&
   !api.originEntity.hasAttribute("label", "urlArchiver", "ignore")
 ) {
-  for (const url of urls) {
-    createBookmark(url, karakeepApiToken);
-  }
+  Promise.all(urls.map((url) => createBookmark(url, karakeepApiToken)))
+    .then((results) => {
+      const replacements = {};
+      for (const result of results) {
+        if (result) replacements[result.originalUrl] = result.newUrl;
+      }
+      if (Object.keys(replacements).length > 0) {
+        replaceUrlsInNote(replacements);
+      }
+    })
+    .catch((error) => {
+      api.log("Error replacing URLs in note: ", error);
+    });
 }
