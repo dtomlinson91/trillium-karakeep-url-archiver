@@ -8,11 +8,11 @@ const dynamicRegex = createDynamicRegex(ignoredDomains);
 const urls = getUrls();
 
 function getAncestorPath(note) {
-  var path = [];
-  var current = note;
+  const path = [];
+  let current = note;
 
   while (current.getParentNotes().length > 0) {
-    var parent = current.getParentNotes()[0];
+    const parent = current.getParentNotes()[0];
     if (parent.noteId === "root") break;
     path.unshift(parent.noteId);
     current = parent;
@@ -22,9 +22,9 @@ function getAncestorPath(note) {
 }
 
 function getNoteUrl(note) {
-  var ancestors = getAncestorPath(note);
-  var noteId = note.noteId;
-  var pathParts = ["root"].concat(ancestors).concat([noteId]);
+  const ancestors = getAncestorPath(note);
+  const noteId = note.noteId;
+  const pathParts = ["root"].concat(ancestors).concat([noteId]);
   return `${triliumUrl}/#${pathParts.join("/")}`;
 }
 
@@ -41,18 +41,16 @@ function createDynamicRegex(domains) {
 }
 
 function getUrls() {
-  var noteContent = api.originEntity.getContent();
-  var urlsFound = [];
-  var match;
+  const noteContent = api.originEntity.getContent();
+  const urlsFound = [];
 
-  dynamicRegex.lastIndex = 0;
-  while ((match = dynamicRegex.exec(noteContent)) !== null) {
-    var url = match[1] || match[2];
+  for (const match of noteContent.matchAll(dynamicRegex)) {
+    const url = match[1] || match[2];
     if (url) urlsFound.push(url);
   }
 
-  var dedupSet = new Set(urlsFound);
-  var dedup = Array.from(dedupSet);
+  const dedupSet = new Set(urlsFound);
+  const dedup = Array.from(dedupSet);
 
   return dedup;
 }
@@ -62,15 +60,15 @@ function decodeHtmlUrl(url) {
 }
 
 function replaceUrlInNote(originalUrl, newUrl) {
-  var noteContent = api.originEntity.getContent();
-  var replacements = {};
+  const noteContent = api.originEntity.getContent();
+  const replacements = {};
   replacements[originalUrl] = newUrl;
 
-  var replaceRegex = createDynamicRegex(ignoredDomains);
-  var updatedContent = noteContent.replace(
+  const replaceRegex = createDynamicRegex(ignoredDomains);
+  const updatedContent = noteContent.replace(
     replaceRegex,
     (match, group1, group2) => {
-      var url = group1 || group2;
+      const url = group1 || group2;
       if (replacements[url]) {
         if (group2) {
           return match.replace(group2, replacements[url]);
@@ -86,11 +84,11 @@ function replaceUrlInNote(originalUrl, newUrl) {
 }
 
 function createBookmark(url, token) {
-  var note = api.originEntity;
-  var noteTitle = note.title;
-  var noteUrl = getNoteUrl(note);
-  var triliumNotes = [{ noteTitle: noteTitle, noteUrl: noteUrl }];
-  var noteText =
+  const note = api.originEntity;
+  const noteTitle = note.title;
+  const noteUrl = getNoteUrl(note);
+  const triliumNotes = [{ noteTitle: noteTitle, noteUrl: noteUrl }];
+  const noteText =
     "Trilium Notes:\n[\n  " +
     triliumNotes.map((n) => JSON.stringify(n)).join(",\n  ") +
     "\n]";
@@ -100,7 +98,7 @@ function createBookmark(url, token) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: "Bearer " + token,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       type: "link",
@@ -110,16 +108,16 @@ function createBookmark(url, token) {
     }),
   })
     .then((response) => {
-      var status = response.status;
+      const status = response.status;
       return response.json().then((data) => ({ status: status, data: data }));
     })
     .then((result) => {
-      var responseData = result.data;
-      var status = result.status;
+      const responseData = result.data;
+      const status = result.status;
 
       api.log(JSON.stringify(responseData));
 
-      var bookmarkId = responseData.id;
+      const bookmarkId = responseData.id;
 
       if (!bookmarkId) {
         api.log("Error: Bookmark ID not found in the response");
@@ -131,7 +129,7 @@ function createBookmark(url, token) {
         api.log(`Bookmark already exists for ${url}, updating with note info`);
         return updateBookmarkNote(bookmarkId, responseData.note, token).then(
           () => {
-            var newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
+            const newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
             addToKarakeepList(bookmarkId, token);
             return { originalUrl: url, newUrl: newUrl };
           },
@@ -139,7 +137,7 @@ function createBookmark(url, token) {
       }
 
       // New bookmark created (201)
-      var newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
+      const newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
       addToKarakeepList(bookmarkId, token);
       return { originalUrl: url, newUrl: newUrl };
     })
@@ -157,29 +155,29 @@ function createBookmark(url, token) {
 }
 
 function updateBookmarkNote(bookmarkId, existingNote, token) {
-  var note = api.originEntity;
-  var noteTitle = note.title;
-  var noteUrl = getNoteUrl(note);
+  const note = api.originEntity;
+  const noteTitle = note.title;
+  const noteUrl = getNoteUrl(note);
 
   // Parse existing Trilium notes or create new array
-  var triliumNotes = [];
-  var otherNoteContent = "";
+  let triliumNotes = [];
+  let otherNoteContent = "";
 
   if (existingNote) {
-    var triliumNotesMarker = "Trilium Notes:";
-    var markerIndex = existingNote.indexOf(triliumNotesMarker);
+    const triliumNotesMarker = "Trilium Notes:";
+    const markerIndex = existingNote.indexOf(triliumNotesMarker);
 
     if (markerIndex !== -1) {
       // Extract other content before the marker
       otherNoteContent = existingNote.substring(0, markerIndex).trim();
 
       // Extract and parse JSON array
-      var jsonStart = markerIndex + triliumNotesMarker.length;
-      var jsonString = existingNote.substring(jsonStart).trim();
+      const jsonStart = markerIndex + triliumNotesMarker.length;
+      const jsonString = existingNote.substring(jsonStart).trim();
 
       try {
         triliumNotes = JSON.parse(jsonString);
-      } catch (e) {
+      } catch {
         api.log("Failed to parse existing Trilium notes JSON, starting fresh");
         triliumNotes = [];
       }
@@ -190,14 +188,14 @@ function updateBookmarkNote(bookmarkId, existingNote, token) {
   }
 
   // Add new note reference if not already present (check by URL)
-  var noteExists = triliumNotes.some((n) => n.noteUrl === noteUrl);
+  const noteExists = triliumNotes.some((n) => n.noteUrl === noteUrl);
 
   if (!noteExists) {
     triliumNotes.push({ noteTitle: noteTitle, noteUrl: noteUrl });
   }
 
   // Build updated note with compact formatting
-  var updatedNote = otherNoteContent ? otherNoteContent + "\n\n" : "";
+  let updatedNote = otherNoteContent ? `${otherNoteContent}\n\n` : "";
   updatedNote +=
     "Trilium Notes:\n[\n  " +
     triliumNotes.map((n) => JSON.stringify(n)).join(",\n  ") +
@@ -208,7 +206,7 @@ function updateBookmarkNote(bookmarkId, existingNote, token) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: "Bearer " + token,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       note: updatedNote,
@@ -236,7 +234,7 @@ function addToKarakeepList(bookmarkId, token) {
     {
       method: "PUT",
       headers: {
-        Authorization: "Bearer " + token,
+        Authorization: `Bearer ${token}`,
       },
     },
   )
@@ -246,7 +244,7 @@ function addToKarakeepList(bookmarkId, token) {
       }
       return response.text().then((text) => (text ? JSON.parse(text) : {}));
     })
-    .then((responseData) => {
+    .then(() => {
       api.log(`successfully added ${bookmarkId} to ${karakeepListId}`);
     })
     .catch((error) => {
@@ -262,7 +260,7 @@ if (
   api.originEntity.type !== "code" &&
   !api.originEntity.hasAttribute("label", "urlArchiver", "ignore")
 ) {
-  for (var i = 0; i < urls.length; i++) {
-    createBookmark(urls[i], karakeepApiToken);
+  for (const url of urls) {
+    createBookmark(url, karakeepApiToken);
   }
 }
