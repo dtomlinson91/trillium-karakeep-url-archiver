@@ -31,7 +31,7 @@ function getNoteUrl(note) {
 function createDynamicRegex(domains) {
   const escapedDomains = domains.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
   const dynamicPart = escapedDomains.map((domain) => `(?:[a-zA-Z0-9-]+\\.)*${domain}(?![\\w-]|\\.[\\w-])`).join("|");
-  const regexPattern = `(?<!<code[^>]>[^<])(?<!<img[^>]>[^<])(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)(?![^<]*<\\/code>)(?![^<]*>)|<a[^>]+?href="(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)`;
+  const regexPattern = `(?<!<code[^>]>[^<])(?<!<img[^>]>[^<])(https:\\/\\/(?!${dynamicPart})[\\w-]+(?:\\.[\\w-]+)+(?:(?:(?!&nbsp;)[^\\s<>\"\\)])*(?!&nbsp;)[^\\s<>\"\\).,;:!?'])?)(?![^<]*<\\/code>)(?![^<]*>)|<a[^>]+?href="(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)`;
 
   return new RegExp(regexPattern, "g");
 }
@@ -51,6 +51,10 @@ function getUrls() {
   var dedup = Array.from(dedupSet);
 
   return dedup;
+}
+
+function decodeHtmlUrl(url) {
+  return url.replace(/&amp;/g, "&");
 }
 
 function replaceUrlInNote(originalUrl, newUrl) {
@@ -90,7 +94,7 @@ function createBookmark(url, token) {
     },
     body: JSON.stringify({
       type: "link",
-      url: url,
+      url: decodeHtmlUrl(url),
       note: noteText,
       source: "api",
     }),

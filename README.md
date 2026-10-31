@@ -37,7 +37,7 @@ Trilium Notes:
 | An ignored domain or one of its subdomains: `https://example.com/x`, `https://karakeep.example.com/x`, `https://a.b.example.com/y` | no |
 | A host that only starts with an ignored domain: `https://example.community/x`, `https://example.com.other.org/y` | yes |
 
-A URL ends at a space, `<`, `>`, `"` or `)`. A full stop or a comma directly after a URL becomes part of the URL. For example, `see https://github.com/a.` sends `https://github.com/a.` to Karakeep.
+A URL ends at a space, a non-breaking space (`&nbsp;`), `<`, `>`, `"` or `)`. Trilium stores a `&` in a URL as `&amp;`. The script changes it back to `&` before it sends the URL to Karakeep. In note text, a `.`, `,`, `;`, `:`, `!`, `?` or `'` at the end of a URL is not part of the URL. For example, `see https://github.com/a.` sends `https://github.com/a` to Karakeep, and the full stop stays in the note.
 
 ## Requirements
 
@@ -140,8 +140,6 @@ Add the label `#urlArchiver=ignore` to the note. The script then does not change
 1. Open the note.
 2. In the **Owned Attributes** of the note, type `#urlArchiver=ignore`.
 3. Save the attribute.
-
-An inheritable label `#urlArchiver(inheritable)=ignore` on a parent note may skip its whole subtree. This was not tested.
 
 ### Skip one URL
 
