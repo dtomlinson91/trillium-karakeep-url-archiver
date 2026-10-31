@@ -30,7 +30,7 @@ function getNoteUrl(note) {
 
 function createDynamicRegex(domains) {
   const escapedDomains = domains.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const dynamicPart = escapedDomains.map((domain) => `(?:[a-zA-Z0-9-]+\\.)+${domain}`).join("|");
+  const dynamicPart = escapedDomains.map((domain) => `(?:[a-zA-Z0-9-]+\\.)*${domain}(?![\\w-]|\\.[\\w-])`).join("|");
   const regexPattern = `(?<!<code[^>]>[^<])(?<!<img[^>]>[^<])(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)(?![^<]*<\\/code>)(?![^<]*>)|<a[^>]+?href="(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)`;
 
   return new RegExp(regexPattern, "g");
