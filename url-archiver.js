@@ -29,9 +29,13 @@ function getNoteUrl(note) {
 }
 
 function createDynamicRegex(domains) {
-  const escapedDomains = domains.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const dynamicPart = escapedDomains.map((domain) => `(?:[a-zA-Z0-9-]+\\.)*${domain}(?![\\w-]|\\.[\\w-])`).join("|");
-  const regexPattern = `(?<!<code[^>]>[^<])(?<!<img[^>]>[^<])(https:\\/\\/(?!${dynamicPart})[\\w-]+(?:\\.[\\w-]+)+(?:(?:(?!&nbsp;)[^\\s<>\"\\)])*(?!&nbsp;)[^\\s<>\"\\).,;:!?'])?)(?![^<]*<\\/code>)(?![^<]*>)|<a[^>]+?href="(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>\"\\)]*)`;
+  const escapedDomains = domains.map((domain) =>
+    domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+  const dynamicPart = escapedDomains
+    .map((domain) => `(?:[a-zA-Z0-9-]+\\.)*${domain}(?![\\w-]|\\.[\\w-])`)
+    .join("|");
+  const regexPattern = `(?<!<code[^>]>[^<])(?<!<img[^>]>[^<])(https:\\/\\/(?!${dynamicPart})[\\w-]+(?:\\.[\\w-]+)+(?:(?:(?!&nbsp;)[^\\s<>"\\)])*(?!&nbsp;)[^\\s<>"\\).,;:!?'])?)(?![^<]*<\\/code>)(?![^<]*>)|<a[^>]+?href="(https:\\/\\/(?!${dynamicPart})[\\w.-]+(?:\\.[\\w.-]+)+[^\\s<>"\\)]*)`;
 
   return new RegExp(regexPattern, "g");
 }
@@ -63,16 +67,19 @@ function replaceUrlInNote(originalUrl, newUrl) {
   replacements[originalUrl] = newUrl;
 
   var replaceRegex = createDynamicRegex(ignoredDomains);
-  var updatedContent = noteContent.replace(replaceRegex, function (match, group1, group2) {
-    var url = group1 || group2;
-    if (replacements[url]) {
-      if (group2) {
-        return match.replace(group2, replacements[url]);
+  var updatedContent = noteContent.replace(
+    replaceRegex,
+    (match, group1, group2) => {
+      var url = group1 || group2;
+      if (replacements[url]) {
+        if (group2) {
+          return match.replace(group2, replacements[url]);
+        }
+        return replacements[url];
       }
-      return replacements[url];
-    }
-    return match;
-  });
+      return match;
+    },
+  );
 
   api.originEntity.setContent(updatedContent);
   api.log(`Replaced ${originalUrl} with ${newUrl} in note`);
@@ -83,7 +90,10 @@ function createBookmark(url, token) {
   var noteTitle = note.title;
   var noteUrl = getNoteUrl(note);
   var triliumNotes = [{ noteTitle: noteTitle, noteUrl: noteUrl }];
-  var noteText = "Trilium Notes:\n[\n  " + triliumNotes.map(function(n) { return JSON.stringify(n); }).join(",\n  ") + "\n]";
+  var noteText =
+    "Trilium Notes:\n[\n  " +
+    triliumNotes.map((n) => JSON.stringify(n)).join(",\n  ") +
+    "\n]";
 
   return fetch(`${karakeepUrl}/api/v1/bookmarks`, {
     method: "POST",
@@ -99,13 +109,11 @@ function createBookmark(url, token) {
       source: "api",
     }),
   })
-    .then(function (response) {
+    .then((response) => {
       var status = response.status;
-      return response.json().then(function (data) {
-        return { status: status, data: data };
-      });
+      return response.json().then((data) => ({ status: status, data: data }));
     })
-    .then(function (result) {
+    .then((result) => {
       var responseData = result.data;
       var status = result.status;
 
@@ -121,11 +129,13 @@ function createBookmark(url, token) {
       // If bookmark already exists (200), update it to append note info
       if (status === 200) {
         api.log(`Bookmark already exists for ${url}, updating with note info`);
-        return updateBookmarkNote(bookmarkId, responseData.note, token).then(function () {
-          var newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
-          addToKarakeepList(bookmarkId, token);
-          return { originalUrl: url, newUrl: newUrl };
-        });
+        return updateBookmarkNote(bookmarkId, responseData.note, token).then(
+          () => {
+            var newUrl = `${karakeepUrl}/dashboard/preview/${bookmarkId}`;
+            addToKarakeepList(bookmarkId, token);
+            return { originalUrl: url, newUrl: newUrl };
+          },
+        );
       }
 
       // New bookmark created (201)
@@ -133,13 +143,13 @@ function createBookmark(url, token) {
       addToKarakeepList(bookmarkId, token);
       return { originalUrl: url, newUrl: newUrl };
     })
-    .then(function (result) {
+    .then((result) => {
       if (!result) return null;
 
       replaceUrlInNote(result.originalUrl, result.newUrl);
       return result;
     })
-    .catch(function (error) {
+    .catch((error) => {
       api.log("Error making API request: ", error);
 
       return null;
@@ -180,9 +190,7 @@ function updateBookmarkNote(bookmarkId, existingNote, token) {
   }
 
   // Add new note reference if not already present (check by URL)
-  var noteExists = triliumNotes.some(function (n) {
-    return n.noteUrl === noteUrl;
-  });
+  var noteExists = triliumNotes.some((n) => n.noteUrl === noteUrl);
 
   if (!noteExists) {
     triliumNotes.push({ noteTitle: noteTitle, noteUrl: noteUrl });
@@ -190,7 +198,10 @@ function updateBookmarkNote(bookmarkId, existingNote, token) {
 
   // Build updated note with compact formatting
   var updatedNote = otherNoteContent ? otherNoteContent + "\n\n" : "";
-  updatedNote += "Trilium Notes:\n[\n  " + triliumNotes.map(function(n) { return JSON.stringify(n); }).join(",\n  ") + "\n]";
+  updatedNote +=
+    "Trilium Notes:\n[\n  " +
+    triliumNotes.map((n) => JSON.stringify(n)).join(",\n  ") +
+    "\n]";
 
   return fetch(`${karakeepUrl}/api/v1/bookmarks/${bookmarkId}`, {
     method: "PATCH",
@@ -203,41 +214,42 @@ function updateBookmarkNote(bookmarkId, existingNote, token) {
       note: updatedNote,
     }),
   })
-    .then(function (response) {
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response.json();
     })
-    .then(function (responseData) {
+    .then((responseData) => {
       api.log(`Successfully updated bookmark ${bookmarkId} with note info`);
       return responseData;
     })
-    .catch(function (error) {
+    .catch((error) => {
       api.log("Error updating bookmark note: ", error);
       return null;
     });
 }
 
 function addToKarakeepList(bookmarkId, token) {
-  return fetch(`${karakeepUrl}/api/v1/lists/${karakeepListId}/bookmarks/${bookmarkId}`, {
-    method: "PUT",
-    headers: {
-      Authorization: "Bearer " + token,
+  return fetch(
+    `${karakeepUrl}/api/v1/lists/${karakeepListId}/bookmarks/${bookmarkId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
     },
-  })
-    .then(function (response) {
+  )
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.text().then(function (text) {
-        return text ? JSON.parse(text) : {};
-      });
+      return response.text().then((text) => (text ? JSON.parse(text) : {}));
     })
-    .then(function (responseData) {
+    .then((responseData) => {
       api.log(`successfully added ${bookmarkId} to ${karakeepListId}`);
     })
-    .catch(function (error) {
+    .catch((error) => {
       api.log("Error adding to list: ", error);
       return null;
     });
@@ -246,7 +258,10 @@ function addToKarakeepList(bookmarkId, token) {
 // api.log(api.originEntity.getContent());
 
 // Check if the note has the url-archiver=ignore attribute
-if (api.originEntity.type !== "code" && !api.originEntity.hasAttribute("label", "urlArchiver", "ignore")) {
+if (
+  api.originEntity.type !== "code" &&
+  !api.originEntity.hasAttribute("label", "urlArchiver", "ignore")
+) {
   for (var i = 0; i < urls.length; i++) {
     createBookmark(urls[i], karakeepApiToken);
   }
