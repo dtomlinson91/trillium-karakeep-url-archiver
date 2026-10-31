@@ -185,6 +185,26 @@ describe("note content", () => {
     assert.equal(content, `<p>${preview} and ${preview}</p>`);
   });
 
+  test("writes the note once for all the URLs", async () => {
+    const { content, writes } = await runScript({
+      content:
+        "<p>https://github.com/a https://gitlab.com/b https://x.org/c</p>",
+    });
+    assert.equal(writes, 1);
+    assert.equal(
+      content,
+      `<p>${previewUrl(bookmarkId("https://github.com/a"))} ${previewUrl(bookmarkId("https://gitlab.com/b"))} ${previewUrl(bookmarkId("https://x.org/c"))}</p>`,
+    );
+  });
+
+  test("does not write the note when no URL was archived", async () => {
+    const { writes } = await runScript({
+      content: "<p>https://github.com/a</p>",
+      karakeep: () => ({ error: "ECONNREFUSED" }),
+    });
+    assert.equal(writes, 0);
+  });
+
   test("does not change ignored URLs or URLs in code", async () => {
     const original =
       "<p>https://karakeep.example.com/x https://example.com</p><pre><code>https://github.com/z</code></pre>";

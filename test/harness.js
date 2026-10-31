@@ -64,9 +64,11 @@ function makeNote({ content, type, ignored }) {
     noteId: "noteB",
     title: NOTE_TITLE,
     type,
+    writes: 0,
     getContent: () => current,
-    setContent: (value) => {
+    setContent(value) {
       current = value;
+      this.writes++;
     },
     hasAttribute: (attrType, name, value) =>
       ignored &&
@@ -85,7 +87,7 @@ function makeNote({ content, type, ignored }) {
  * @param {string} [options.type] The Trilium note type.
  * @param {boolean} [options.ignored] True when the note has the label urlArchiver=ignore.
  * @param {Function} [options.karakeep] Returns the mock response for each request. A response with `error` makes fetch reject.
- * @returns {Promise<{requests: object[], logs: string[], content: string}>} The requests to Karakeep, the log lines and the final note content.
+ * @returns {Promise<{requests: object[], logs: string[], content: string, writes: number}>} The requests to Karakeep, the log lines, the final note content and the number of note writes.
  */
 async function runScript({
   content,
@@ -126,7 +128,7 @@ async function runScript({
   // the script does not return its promises, and the mocks settle within one macrotask
   await new Promise((resolve) => setImmediate(resolve));
 
-  return { requests, logs, content: note.getContent() };
+  return { requests, logs, content: note.getContent(), writes: note.writes };
 }
 
 module.exports = {
