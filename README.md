@@ -31,7 +31,7 @@ Trilium Notes:
 | Text: `https://github.com/a` | yes |
 | A link target: `<a href="https://github.com/a">GitHub</a>` | yes |
 | Link text that is the URL: `<a href="https://github.com/a">https://github.com/a</a>` | yes, both copies |
-| A URL in a code block, when no tag comes between the URL and `</code>` | no |
+| A URL in a code block or in inline code, when no tag comes between the URL and `</code>` | no |
 | An image source: `<img src="https://github.com/a.png">` | no |
 | An `http://` URL | no |
 | A subdomain of an ignored domain: `https://karakeep.example.com/x`, `https://a.b.example.com/y` | no |
@@ -84,8 +84,10 @@ Set these constants at the top of `url-archiver.js`:
 
 The `runOnNoteContentChange` relation tells Trilium to run the script when the content of a note changes. An inheritable relation applies to the note and to all the notes below it.
 
-1. Open the root note to archive URLs in all notes. Open a different note to archive URLs only in its subtree.
-2. In the **Owned Attributes** of that note, add a relation.
+The easiest way is to put the relation on the root note. The script then runs for every note in Trilium. To limit the script to one part of your notes, see [Archive URLs in one subtree](#archive-urls-in-one-subtree).
+
+1. Open the root note.
+2. In the **Owned Attributes** of the root note, add a relation.
 3. Set the name to `runOnNoteContentChange`.
 4. Set the target note to the `url-archiver` note.
 5. Select **Inheritable**.
@@ -93,7 +95,7 @@ The `runOnNoteContentChange` relation tells Trilium to run the script when the c
 
 ### 4. Test the script
 
-1. Create a test note below the note from step 3.
+1. Create a new test note.
 2. Type an external URL, for example `https://github.com/karakeep-app/karakeep`.
 3. Wait some seconds. The script changes a URL only after Karakeep replies for that URL.
 4. Open the note again. The URL is now a link to `<karakeepUrl>/dashboard/preview/<bookmarkId>`.
@@ -101,18 +103,53 @@ The `runOnNoteContentChange` relation tells Trilium to run the script when the c
 
 If the URL does not change, open **Menu** > **Advanced** > **Show backend log**. The script writes each Karakeep response and each error to this log.
 
-## Options
+## Use the script
 
-| Option | How | Effect |
-|---|---|---|
-| Archive all notes | Put the relation on the root note, with **Inheritable** selected. | The script runs for each note in Trilium. |
-| Archive one subtree | Put the relation on the top note of the subtree, with **Inheritable** selected. | The script runs only for the notes in that subtree. |
-| Skip one note | Add the label `#urlArchiver=ignore` to the note. | The script does not change the note. |
-| Skip your own services | Add their domains to `ignoredDomains`. | The script does not archive URLs on subdomains of those domains. |
-| Keep a URL as it is | Put the URL in a code block. | The script does not archive the URL. |
-| Choose the Karakeep list | Set `karakeepListId`. | Each archived bookmark goes into that list. |
+After the install, you do not have to do anything. Write your notes as usual. The script archives the external URLs each time that the content of a note changes.
+
+### Only new changes are archived
+
+> [!IMPORTANT]
+> The relation does not archive the URLs in all your notes at once. The script runs only when the content of a note changes. From the time that you add the relation, it archives the URLs in each new note and in each note that you edit. Notes that you do not edit keep their original URLs.
+
+### Edit old notes with care
+
+> [!CAUTION]
+> When you edit an old note, the script archives every external URL in that note, not only the URLs that you add. If the note has many links, the script changes all of them, and Karakeep gets a bookmark for each one.
+
+A small edit to an old note can therefore make a large change. To keep the URLs of an old note, add the skip label before you edit the note. See [Skip all URLs in one note](#skip-all-urls-in-one-note).
+
+You can undo the change. The risk is small, but the undo takes some work:
+
+1. Add the label `#urlArchiver=ignore` to the note. A restore is a content change too, so the script may run again without the label.
+2. In Trilium, open the revisions of the note. Restore the version before the script changed it.
+3. If you want the script to run on the note again, remove the label.
+4. In Karakeep, open the list from `karakeepListId`. Delete the bookmarks that the script made.
+
+> [!WARNING]
+> In step 4, delete only the new bookmarks. A bookmark that existed before the edit can also link to other Trilium notes. Its note field lists those notes.
+
+### Archive URLs in one subtree
+
+To limit the script to one part of your notes, put the relation on the top note of that subtree, not on the root note. Select **Inheritable**. The script then runs only for that note and the notes below it.
+
+### Skip all URLs in one note
+
+Add the label `#urlArchiver=ignore` to the note. The script then does not change any URL in that note.
+
+1. Open the note.
+2. In the **Owned Attributes** of the note, type `#urlArchiver=ignore`.
+3. Save the attribute.
 
 An inheritable label `#urlArchiver(inheritable)=ignore` on a parent note may skip its whole subtree. This was not tested.
+
+### Skip one URL
+
+Put the URL in a code block or in inline code. This is a quick way to keep one URL as it is. The script skips a URL in code when no other tag comes between the URL and the end of the code.
+
+### Skip your own services
+
+Add the domains of your own services to `ignoredDomains`. The script then does not archive URLs on subdomains of those domains, for example `https://trilium.example.com`. It still archives a URL on the bare domain, for example `https://example.com`.
 
 ## Errors
 
