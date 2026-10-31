@@ -13,7 +13,7 @@ Trilium runs the script after each content change to a note that has the `runOnN
 3. For each URL, it sends a `POST /api/v1/bookmarks` request to Karakeep. The request holds the URL and a reference to the Trilium note. The script sends the requests for all the URLs at the same time.
 4. If the bookmark exists already (HTTP 200), Karakeep keeps the old note field. The script then adds the reference to the note field with a `PATCH` request. It keeps the text that is in the field. It does not add the same Trilium note twice.
 5. It adds the bookmark to the Karakeep list in `karakeepListId`.
-6. It replaces each copy of the URL in the note with `<karakeepUrl>/dashboard/preview/<bookmarkId>`.
+6. When Karakeep has replied for all the URLs, the script replaces each copy of each archived URL with `<karakeepUrl>/dashboard/preview/<bookmarkId>`. It writes the note one time, for all the URLs together.
 
 The note field of a bookmark holds a JSON list of the Trilium notes that link to the URL:
 
@@ -97,7 +97,7 @@ The easiest way is to put the relation on the root note. The script then runs fo
 
 1. Create a new test note.
 2. Type an external URL, for example `https://github.com/karakeep-app/karakeep`.
-3. Wait some seconds. The script changes a URL only after Karakeep replies for that URL.
+3. Wait some seconds. The script changes the note only after Karakeep replies for all the URLs.
 4. Open the note again. The URL is now a link to `<karakeepUrl>/dashboard/preview/<bookmarkId>`.
 5. In Karakeep, open the list. The bookmark is in the list.
 
@@ -154,3 +154,40 @@ Add the domains of your own services to `ignoredDomains`. The script then does n
 The script writes each error to the Trilium backend log. When a request for a URL fails, the script does not change that URL in the note. The failure has no effect on the other URLs. The next content change to the note tries the URL again.
 
 The script also runs after a content change through the Trilium ETAPI.
+
+## Development
+
+The repo has tests and a linter for `url-archiver.js`. Neither one changes the script. Trilium gets only the content of `url-archiver.js`.
+
+### Requirements
+
+- Node.js 22 or later.
+- Run `npm install` one time. It installs [Biome](https://biomejs.dev), the linter and formatter. The tests need no packages.
+
+### Commands
+
+| Command          | What it does                                            |
+| ---------------- | ------------------------------------------------------- |
+| `npm test`       | Runs the tests in `test/` with the Node.js test runner. |
+| `npm run check`  | Lints and checks the format of all files with Biome.    |
+| `npm run lint`   | Lints all files with Biome.                             |
+| `npm run format` | Formats all files with Biome.                           |
+
+Run `npm test` and `npm run check` after each change. Both must pass.
+
+### Tests
+
+`test/harness.js` runs the real `url-archiver.js` with a mock Trilium note and a mock Karakeep API. It records each request to Karakeep, each log line, each note write and the final note content. `test/url-archiver.test.js` holds the tests.
+
+> [!IMPORTANT]
+> The tests use the example values at the top of `url-archiver.js`. Keep those values in the repo. Put your own values only in the script note in Trilium.
+
+### CI
+
+`.forgejo/workflows/test.yml` runs `npm test` and `npm run check` on each push and on each pull request.
+
+### Release a change
+
+1. Change `url-archiver.js`. Run `npm test` and `npm run check`.
+2. Copy the content of `url-archiver.js` into the script note in Trilium.
+3. In the script note, set the 5 constants to your own values again. See [Configuration](#configuration).
